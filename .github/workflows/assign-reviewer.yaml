@@ -1,0 +1,54 @@
+name: Assign Reviewer
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    secrets:
+      APP_ID:
+        required: true
+      PRIVATE_KEY:
+        required: true
+
+# Ensure scripts are run with pipefail. See:
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  assign_reviewer:
+    name: Assign Reviewer
+    runs-on: ubuntu-latest
+    if: startsWith(github.repository, 'dopplerhq/')
+    steps:
+      - name: Generate GitHub token
+        id: generate-github-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+          permission-pull-requests: write
+          permission-members: read
+      - name: Check member status
+        id: is-member
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          gh api --silent -X GET /orgs/dopplerhq/members/${{ github.event.pull_request.user.login }}
+          if [ "$?" -gt 0 ]; then
+              echo "IS_EXTERNAL_CONTRIBUTOR=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Assign engineering-rotation as reviewer
+        if: ${{ steps.is-member.outputs.IS_EXTERNAL_CONTRIBUTOR == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          gh api -X POST \
+          /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/requested_reviewers \
+          -F 'team_reviewers[]=engineering-rotation'
