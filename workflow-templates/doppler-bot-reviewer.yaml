@@ -1,0 +1,19 @@
+name: Doppler Bot Reviewer
+
+on:
+  # For security reasons, we have to use pull_request_target here.
+  # This differs from pull_request in that it runs at the _base_ of the PR,
+  # e.g. main. This allows us to access secrets. In this workflow, we should
+  # never actually clone the PR, as it may contain malicious code.
+  # https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+  pull_request_target:
+    types: [opened, reopened]
+    branches: [$default-branch]
+
+jobs:
+  bot:
+    name: Bot
+    uses: DopplerHQ/.github/.github/workflows/assign-reviewer.yaml@main
+    secrets:
+      APP_ID: ${{ secrets.DOPPLER_INTERNAL_BOT_APP_ID }}
+      PRIVATE_KEY: ${{ secrets.DOPPLER_INTERNAL_BOT_PRIVATE_KEY }}
