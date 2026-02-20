@@ -1,5 +1,8 @@
 name: Doppler Bot Reviewer
 
+permissions:
+  contents: read
+
 on:
   # For security reasons, we have to use pull_request_target here.
   # This differs from pull_request in that it runs at the _base_ of the PR,

@@ -1,0 +1,4 @@
+{
+    "name": "Doppler Dependencies",
+    "description": "Scans for issues in dependencies according to repository security settings."
+}
